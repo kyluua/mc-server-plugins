@@ -4,9 +4,6 @@ on:
   push:
     branches:
       - asb-build-26-2
-    paths:
-      - 'asb-build/**'
-      - '.github/workflows/asb-build.yml'
   pull_request:
     branches:
       - main
@@ -22,9 +19,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Reconstruct source
+      - name: Verify and reconstruct source
         shell: bash
         run: |
+          sha256sum asb-build/source.part*
+          wc -c asb-build/source.part*
+          cat > /tmp/asb.sha256 <<'EOF'
+          50020934b25818afc2b6efa10b433caca63bee78ee6ff7d03c78532a635dcee3  asb-build/source.part00
+          fcfdc87aea2157136debe7f57ed6493269da661dc2b36228f682a59a5a203b9d  asb-build/source.part01
+          dcbd6ef81bc540af27ed4f50dcf524c5cfb604b133ccce58cc5e6d0dd4ffddd4  asb-build/source.part02
+          739223065752a2ab98c134f752ca98e4ba7e7c5d528756ff52f1c314814a4c5e  asb-build/source.part03
+          8843e29fca18778e302553c7ab55d88c2711f9e0e2e8adf146ebb1ba92eaf864  asb-build/source.part04
+          d600b2b29b563ca97f75a39457527a41ecb9b0a4c3ba06e1f4dc243da9bc12f7  asb-build/source.part05
+          aa0ddd107c37084e55be02bbfd75fc351aa915e2aa166a78f7b68612b55e5645  asb-build/source.part06
+          EOF
+          sha256sum -c /tmp/asb.sha256
           cat asb-build/source.part* | base64 -d > asb-build/source.zip
           mkdir -p asb-build/work
           unzip -q asb-build/source.zip -d asb-build/work
