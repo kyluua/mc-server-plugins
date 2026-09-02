@@ -23,7 +23,6 @@ jobs:
         shell: bash
         run: |
           sha256sum asb-build/source.part*
-          wc -c asb-build/source.part*
           cat > /tmp/asb.sha256 <<'EOF'
           50020934b25818afc2b6efa10b433caca63bee78ee6ff7d03c78532a635dcee3  asb-build/source.part00
           fcfdc87aea2157136debe7f57ed6493269da661dc2b36228f682a59a5a203b9d  asb-build/source.part01
@@ -38,6 +37,20 @@ jobs:
           mkdir -p asb-build/work
           unzip -q asb-build/source.zip -d asb-build/work
           test -f asb-build/work/auto_schematic_builder/build.gradle
+
+      - name: Apply Minecraft 26.2 HUD compatibility fix
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('asb-build/work/auto_schematic_builder/src/client/java/dev/luunite/autoschematic/BuilderController.java')
+          s = p.read_text()
+          old = 'mc.player.displayClientMessage(Component.literal(text), true);'
+          new = 'mc.gui.hud.setOverlayMessage(Component.literal(text), false);'
+          if old not in s:
+              raise SystemExit('Expected old HUD call was not found')
+          p.write_text(s.replace(old, new, 1))
+          PY
 
       - name: Set up Java 25
         uses: actions/setup-java@v4
