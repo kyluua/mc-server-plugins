@@ -1,0 +1,57 @@
+name: Build Auto Schematic Builder 26.2
+
+on:
+  push:
+    branches:
+      - asb-build-26-2
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Reconstruct source
+        shell: bash
+        run: |
+          cat asb-build/source.part* | base64 -d > asb-build/source.zip
+          mkdir -p asb-build/work
+          unzip -q asb-build/source.zip -d asb-build/work
+          test -f asb-build/work/auto_schematic_builder/build.gradle
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.5.1'
+
+      - name: Build Fabric mod
+        working-directory: asb-build/work/auto_schematic_builder
+        run: gradle --no-daemon build --stacktrace
+
+      - name: Collect installable jar
+        shell: bash
+        run: |
+          mkdir -p asb-build/artifact
+          find asb-build/work/auto_schematic_builder/build/libs -maxdepth 1 -type f -name '*.jar' ! -name '*-sources.jar' -print -exec cp {} asb-build/artifact/ \;
+          test "$(find asb-build/artifact -type f -name '*.jar' | wc -l)" -ge 1
+
+      - name: Upload installable jar
+        uses: actions/upload-artifact@v4
+        with:
+          name: auto-schematic-builder-26.2
+          path: asb-build/artifact/*.jar
+          if-no-files-found: error
